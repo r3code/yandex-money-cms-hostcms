@@ -87,7 +87,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	public function sendAviso($callbackParams, $code){
 		header("Content-type: text/xml; charset=utf-8");
 		$xml = '<?xml version="1.0" encoding="UTF-8"?>
-			<paymentAvisoResponse performedDatetime="'.date("c").'" code="'.$code.'" invoiceId="'.$callbackParams['invoiceId'].'" shopId="'.$this->shopid.'"/>';
+			<paymentAvisoResponse performedDatetime="'.date("c").'" code="'.$code.'" invoiceId="'.$callbackParams['invoiceId'].'" shopId="'.$this->ym_shopid.'"/>';
 		echo $xml;
 	}
 
@@ -107,9 +107,9 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 		}
 		if ($sendCode){
 			if ($aviso){
-				$this->sendAviso($callbackParams, $code);	
+				$this->sendAviso($callbackParams, $code);
 			}else{
-				$this->sendCode($callbackParams, $code);	
+				$this->sendCode($callbackParams, $code);
 			}
 			exit;
 		}else{
