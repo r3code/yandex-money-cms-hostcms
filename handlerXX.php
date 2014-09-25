@@ -23,6 +23,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	protected $ym_method_gp = 1; /* Только для юридического лица! Наличными в кассах и терминалах партнеров. 1 - используется, 0 - нет */
 	protected $ym_method_mc = 1; /* Только для юридического лица! Оплата со счета мобильного телефона. 1 - используется, 0 - нет */
 	protected $ym_method_wm = 1; /* Только для юридического лица! Электронная валюта WebMoney. 1 - используется, 0 - нет */
+	protected $ym_method_ab = 1; /* Только для юридического лица! АльфаКлик. 1 - используется, 0 - нет */
 
 	/* Только для юридического лица! Идентификатор вашего магазина в Яндекс.Деньгах (ShopID) */
 	protected $ym_shopid = 101;
@@ -246,6 +247,9 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 								<?php } ?>
 								<?php if ($this->ym_method_mc && $this->ym_org_mode){?>
 									<option value="MC">оплата со счета мобильного телефона</option>
+								<?php } ?>
+								<?php if ($this->ym_method_ac& $this->ym_org_mode){?>
+									<option value="AC">оплата со счета мобильного телефона</option>
 								<?php } ?>
 								<?php if ($this->ym_method_wm && $this->ym_org_mode){?>
 									<option value="WM">электронная валюта WebMoney</option>
