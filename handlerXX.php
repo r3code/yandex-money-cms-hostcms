@@ -248,8 +248,8 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 								<?php if ($this->ym_method_mc && $this->ym_org_mode){?>
 									<option value="MC">оплата со счета мобильного телефона</option>
 								<?php } ?>
-								<?php if ($this->ym_method_ac& $this->ym_org_mode){?>
-									<option value="AC">оплата со счета мобильного телефона</option>
+								<?php if ($this->ym_method_ab && $this->ym_org_mode){?>
+									<option value="AB"> Альфа-Клик</option>
 								<?php } ?>
 								<?php if ($this->ym_method_wm && $this->ym_org_mode){?>
 									<option value="WM">электронная валюта WebMoney</option>
