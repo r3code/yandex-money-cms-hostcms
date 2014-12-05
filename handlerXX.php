@@ -192,7 +192,6 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 				<input type="hidden" name="ShopID" value="<?php echo $this->ym_shopid?>">
 				<input type="hidden" name="CustomerNumber" value="<?php echo (is_null($oSiteUser) ? 0 : $oSiteUser->id)?>">
 				<input type="hidden" name="orderNumber" value="<?php echo $this->_shopOrder->id?>">
-				<input type="hidden" name="orderSumCurrencyPaycash" value="<?php echo $this->ym_orderSumCurrencyPaycash?>">
 				<input type="hidden" name="shopSuccessURL" value="<?php echo $successUrl?>">
 				<input type="hidden" name="shopFailURL" value="<?php echo $failUrl?>">
 				<input type="hidden" name="cms_name" value="hostcms">
