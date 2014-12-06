@@ -12,7 +12,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	protected $ym_org_mode = 0; // 1 - На расчетный счет организации с заключением договора с Яндекс.Деньгами (юр.лицо), 0 - На счет физического лица в электронной валюте Яндекс.Денег'
 
 	/* Только для физического лица! Идентификатор магазина в системе Яндекс.Деньги. Выдается оператором системы. */
-	protected $ym_account = '4100322514576';
+	protected $ym_account = '410011680044609';
 
 	/* Пароль магазина в системе Яндекс.Деньги. Выдается оператором системы. */
 	protected $ym_password = 'mEG2ninQcEOc8xTbHy5ApQOf';
@@ -24,6 +24,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	protected $ym_method_mc = 1; /* Только для юридического лица! Оплата со счета мобильного телефона. 1 - используется, 0 - нет */
 	protected $ym_method_wm = 1; /* Только для юридического лица! Электронная валюта WebMoney. 1 - используется, 0 - нет */
 	protected $ym_method_ab = 1; /* Только для юридического лица! АльфаКлик. 1 - используется, 0 - нет */
+	protected $ym_method_sb = 1; /* Только для юридического лица! Сбербанк Онлайн. 1 - используется, 0 - нет */
 
 	/* Только для юридического лица! Идентификатор вашего магазина в Яндекс.Деньгах (ShopID) */
 	protected $ym_shopid = 101;
@@ -249,6 +250,9 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 								<?php } ?>
 								<?php if ($this->ym_method_ab && $this->ym_org_mode){?>
 									<option value="AB"> Альфа-Клик</option>
+								<?php } ?>
+								<?php if ($this->ym_method_sb && $this->ym_org_mode){?>
+									<option value="SB"> Сбербанк Онлайн</option>
 								<?php } ?>
 								<?php if ($this->ym_method_wm && $this->ym_org_mode){?>
 									<option value="WM">электронная валюта WebMoney</option>
