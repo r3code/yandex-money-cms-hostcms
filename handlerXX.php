@@ -233,7 +233,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 						<td> 
 						    <?php if ($this->ym_org_mode){?>
 								<select name="paymentType">
-							<?php }else ?>
+							<?php }else {?>
 								<select name="payment-type">
 							<?php } ?>
 								<?php if ($this->ym_method_pc){?>
