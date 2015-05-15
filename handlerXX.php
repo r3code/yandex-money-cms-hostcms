@@ -2,6 +2,7 @@
 
 /**
  * Яндекс.Деньги
+ * Версия 1.0.0
  */
 class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 {		
