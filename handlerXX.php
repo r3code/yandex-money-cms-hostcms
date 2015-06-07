@@ -2,7 +2,7 @@
 
 /**
  * Яндекс.Деньги
- * Версия 1.0.0
+ * Версия 1.1.0
  */
 class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 {		
@@ -26,6 +26,8 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	protected $ym_method_wm = 1; /* Только для юридического лица! Электронная валюта WebMoney. 1 - используется, 0 - нет */
 	protected $ym_method_ab = 1; /* Только для юридического лица! АльфаКлик. 1 - используется, 0 - нет */
 	protected $ym_method_sb = 1; /* Только для юридического лица! Сбербанк Онлайн. 1 - используется, 0 - нет */
+	protected $ym_method_ma = 1; /* Только для юридического лица! MasterPass. 1 - используется, 0 - нет */
+	protected $ym_method_pb = 1; /* Только для юридического лица! Интернет-банк Промсвязьбанка. 1 - используется, 0 - нет */
 
 	/* Только для юридического лица! Идентификатор вашего магазина в Яндекс.Деньгах (ShopID) */
 	protected $ym_shopid = 101;
@@ -188,14 +190,14 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 		?>
 		<h2>Оплата через систему Яндекс.Деньги</h2>
 		
-		<form method="POST" action="<?php echo $this->getFormUrl()?>">
-			<?php if ($this->ym_org_mode){?>
-				<input class="wide" name="scid" value="<?php echo $this->ym_scid?>" type="hidden">
-				<input type="hidden" name="ShopID" value="<?php echo $this->ym_shopid?>">
-				<input type="hidden" name="CustomerNumber" value="<?php echo (is_null($oSiteUser) ? 0 : $oSiteUser->id)?>">
-				<input type="hidden" name="orderNumber" value="<?php echo $this->_shopOrder->id?>">
-				<input type="hidden" name="shopSuccessURL" value="<?php echo $successUrl?>">
-				<input type="hidden" name="shopFailURL" value="<?php echo $failUrl?>">
+		<form method="POST" action="<?php echo $this->getFormUrl(); ?>">
+			<?php if ($this->ym_org_mode){ ?>
+				<input class="wide" name="scid" value="<?php echo $this->ym_scid; ?>" type="hidden">
+				<input type="hidden" name="ShopID" value="<?php echo $this->ym_shopid; ?>">
+				<input type="hidden" name="CustomerNumber" value="<?php echo (is_null($oSiteUser) ? 0 : $oSiteUser->id); ?>">
+				<input type="hidden" name="orderNumber" value="<?php echo $this->_shopOrder->id; ?>">
+				<input type="hidden" name="shopSuccessURL" value="<?php echo $successUrl; ?>">
+				<input type="hidden" name="shopFailURL" value="<?php echo $failUrl; ?>">
 				<input type="hidden" name="cms_name" value="hostcms">
 			<?php }else {?>
 				   <input type="hidden" name="receiver" value="<?php echo $this->ym_account; ?>">
@@ -203,12 +205,12 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 				   <input type="hidden" name="short-dest" value="<?php echo $site_alias;?>">
 				   <input type="hidden" name="writable-targets" value="false">
 				   <input type="hidden" name="comment-needed" value="true">
-				   <input type="hidden" name="label" value="<?php echo $this->_shopOrder->id?>">
+				   <input type="hidden" name="label" value="<?php echo $this->_shopOrder->id;?>">
 				   <input type="hidden" name="quickpay-form" value="shop">
 
-				   <input type="hidden" name="targets" value="Заказ <?php echo $this->_shopOrder->id?>">
+				   <input type="hidden" name="targets" value="Заказ <?php echo $this->_shopOrder->id;?>">
 				   <input type="hidden" name="sum" value="<?php echo $Sum;?>" data-type="number" >
-				   <input type="hidden" name="comment" value="<?php echo $this->_shopOrder->description?>" >
+				   <input type="hidden" name="comment" value="<?php echo $this->_shopOrder->description;?>" >
 				   <input type="hidden" name="need-fio" value="true">
 				   <input type="hidden" name="need-email" value="true" >
 				   <input type="hidden" name="need-phone" value="false">
@@ -238,25 +240,31 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 								<select name="payment-type">
 							<?php } ?>
 								<?php if ($this->ym_method_pc){?>
-									<option value="PC">электронная валюта Яндекс.Деньги</option>
+									<option value="PC">Оплата из кошелька в Яндекс.Деньгах</option>
 								<?php } ?>
 								<?php if ($this->ym_method_ac){?>
-									<option value="AC">банковские карты VISA, MasterCard, Maestro</option>
+									<option value="AC">Оплата с произвольной банковской карты</option>
 								<?php } ?>
 								<?php if ($this->ym_method_gp && $this->ym_org_mode){?>
-									<option value="GP">наличными в кассах и терминалах партнеров</option>
+									<option value="GP">Оплата наличными через кассы и терминалы</option>
 								<?php } ?>
 								<?php if ($this->ym_method_mc && $this->ym_org_mode){?>
-									<option value="MC">оплата со счета мобильного телефона</option>
+									<option value="MC">Платеж со счета мобильного телефона</option>
 								<?php } ?>
 								<?php if ($this->ym_method_ab && $this->ym_org_mode){?>
-									<option value="AB"> Альфа-Клик</option>
+									<option value="AB">Оплата через Альфа-Клик</option>
 								<?php } ?>
 								<?php if ($this->ym_method_sb && $this->ym_org_mode){?>
-									<option value="SB"> Сбербанк Онлайн</option>
+									<option value="SB">Оплата через Сбербанк: оплата по SMS или Сбербанк Онлайн</option>
 								<?php } ?>
 								<?php if ($this->ym_method_wm && $this->ym_org_mode){?>
-									<option value="WM">электронная валюта WebMoney</option>
+									<option value="WM">Оплата из кошелька в системе WebMoney</option>
+								<?php } ?>
+								<?php if ($this->ym_method_ma && $this->ym_org_mode){?>
+									<option value="MA">Оплата через MasterPass</option>
+								<?php } ?>
+								<?php if ($this->ym_method_pb && $this->ym_org_mode){?>
+									<option value="PB">Оплата через интернет-банк Промсвязьбанка</option>
 								<?php } ?>
 							</select>
 						</td>
