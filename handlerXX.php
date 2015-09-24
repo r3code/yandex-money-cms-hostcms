@@ -2,7 +2,7 @@
 
 /**
  * Яндекс.Деньги
- * Версия 1.1.0
+ * Версия 1.2.0
  */
 class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 {		
@@ -28,6 +28,8 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	protected $ym_method_sb = 1; /* Только для юридического лица! Сбербанк Онлайн. 1 - используется, 0 - нет */
 	protected $ym_method_ma = 1; /* Только для юридического лица! MasterPass. 1 - используется, 0 - нет */
 	protected $ym_method_pb = 1; /* Только для юридического лица! Интернет-банк Промсвязьбанка. 1 - используется, 0 - нет */
+	protected $ym_method_qw = 1; /* Только для юридического лица! Оплата через QIWI Wallet. 1 - используется, 0 - нет */
+	protected $ym_method_qp = 1; /* Только для юридического лица! Оплата через доверительный платеж (Куппи.ру). 1 - используется, 0 - нет */
 
 	/* Только для юридического лица! Идентификатор вашего магазина в Яндекс.Деньгах (ShopID) */
 	protected $ym_shopid = 101;
@@ -207,6 +209,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 				   <input type="hidden" name="comment-needed" value="true">
 				   <input type="hidden" name="label" value="<?php echo $this->_shopOrder->id;?>">
 				   <input type="hidden" name="quickpay-form" value="shop">
+					<input type="hidden" name="successUrl" value="<?php echo $successUrl; ?>"> 
 
 				   <input type="hidden" name="targets" value="Заказ <?php echo $this->_shopOrder->id;?>">
 				   <input type="hidden" name="sum" value="<?php echo $Sum;?>" data-type="number" >
@@ -234,11 +237,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 					<tr>
 						<td>Способ оплаты</td>
 						<td> 
-						    <?php if ($this->ym_org_mode){?>
 								<select name="paymentType">
-							<?php }else {?>
-								<select name="payment-type">
-							<?php } ?>
 								<?php if ($this->ym_method_pc){?>
 									<option value="PC">Оплата из кошелька в Яндекс.Деньгах</option>
 								<?php } ?>
@@ -265,6 +264,12 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 								<?php } ?>
 								<?php if ($this->ym_method_pb && $this->ym_org_mode){?>
 									<option value="PB">Оплата через интернет-банк Промсвязьбанка</option>
+								<?php } ?>
+								<?php if ($this->ym_method_qw && $this->ym_org_mode){?>
+									<option value="QW">Оплата через QIWI Wallet</option>
+								<?php } ?>
+								<?php if ($this->ym_method_qp && $this->ym_org_mode){?>
+									<option value="QP">Оплата через доверительный платеж (Куппи.ру)</option>
 								<?php } ?>
 							</select>
 						</td>
