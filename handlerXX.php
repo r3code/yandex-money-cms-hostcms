@@ -2,7 +2,9 @@
 
 /**
  * Яндекс.Деньги
- * Версия 1.2.0
+ * Версия 1.2.1
+ * Лицензионный договор:
+ *	Любое использование Вами программы означает полное и безоговорочное принятие Вами условий лицензионного договора, размещенного по адресу https://money.yandex.ru/doc.xml?id=527132 (далее – «Лицензионный договор»). Если Вы не принимаете условия Лицензионного договора в полном объёме, Вы не имеете права использовать программу в каких-либо целях.
  */
 class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 {		
@@ -85,54 +87,27 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	}
 
 	public function checkSign($callbackParams){
-		$string = $callbackParams['action'].';'.$callbackParams['orderSumAmount'].';'.$callbackParams['orderSumCurrencyPaycash'].';'.$callbackParams['orderSumBankPaycash'].';'.$callbackParams['shopId'].';'.$callbackParams['invoiceId'].';'.$callbackParams['customerNumber'].';'.$this->ym_password;
-		$md5 = strtoupper(md5($string));
-		//var_dump($string, $md5, $callbackParams);
-		return ($callbackParams['md5']==$md5);
-	}
-
-	public function sendAviso($callbackParams, $code){
-		header("Content-type: text/xml; charset=utf-8");
-		$xml = '<?xml version="1.0" encoding="UTF-8"?>
-			<paymentAvisoResponse performedDatetime="'.date("c").'" code="'.$code.'" invoiceId="'.$callbackParams['invoiceId'].'" shopId="'.$this->ym_shopid.'"/>';
-		echo $xml;
-	}
-
-	public function sendCode($callbackParams, $code){
-		header("Content-type: text/xml; charset=utf-8");
-		$xml = '<?xml version="1.0" encoding="UTF-8"?>
-			<checkOrderResponse performedDatetime="'.date("c").'" code="'.$code.'" invoiceId="'.$callbackParams['invoiceId'].'" shopId="'.$this->ym_shopid.'"/>';
-		echo $xml;
-	}
-
-	public function checkOrder($callbackParams, $sendCode=FALSE, $aviso=FALSE){ 
-		
-		if ($this->checkSign($callbackParams)){
-			$code = 0;
+		if ($this->ym_org_mode){
+			$string = $callbackParams['action'].';'.$callbackParams['orderSumAmount'].';'.$callbackParams['orderSumCurrencyPaycash'].';'.$callbackParams['orderSumBankPaycash'].';'.$callbackParams['shopId'].';'.$callbackParams['invoiceId'].';'.$callbackParams['customerNumber'].';'.$this->ym_password;
+			$md5 = strtoupper(md5($string));
+			return (strtoupper($callbackParams['md5'])==$md5);
 		}else{
-			$code = 1;
-		}
-		if ($sendCode){
-			if ($aviso){
-				$this->sendAviso($callbackParams, $code);
-			}else{
-				$this->sendCode($callbackParams, $code);
+			$string = $callbackParams['notification_type'].'&'.$callbackParams['operation_id'].'&'.$callbackParams['amount'].'&'.$callbackParams['currency'].'&'.$callbackParams['datetime'].'&'.$callbackParams['sender'].'&'.$callbackParams['codepro'].'&'.$this->ym_password.'&'.$callbackParams['label'];
+			$check = (sha1($string) == $callbackParams['sha1_hash']);
+			if (!$check){
+				header('HTTP/1.0 401 Unauthorized');
+				return false;
 			}
-			exit;
-		}else{
-			return $code;
+			return true;
 		}
 	}
 
-	public function individualCheck($callbackParams){
-		$string = $callbackParams['notification_type'].'&'.$callbackParams['operation_id'].'&'.$callbackParams['amount'].'&'.$callbackParams['currency'].'&'.$callbackParams['datetime'].'&'.$callbackParams['sender'].'&'.$callbackParams['codepro'].'&'.$this->ym_password.'&'.$callbackParams['label'];
-		$check = (sha1($string) == $callbackParams['sha1_hash']);
-		if (!$check){
-			header('HTTP/1.0 401 Unauthorized');
-			return false;
-		}
-		return true;
-	
+	public function sendCode($callbackParams, $code, $message=''){
+		if (!$this->ym_org_mode) return;
+		header("Content-type: text/xml; charset=utf-8");
+		$xml = '<?xml version="1.0" encoding="UTF-8"?>
+			<'.$callbackParams['action'].'Response performedDatetime="'.date("c").'" code="'.$code.'" invoiceId="'.$callbackParams['invoiceId'].'" shopId="'.$this->ym_shopid.'" techmessage="'.$message.'"/>';
+		echo $xml;
 	}
 
 	/* оплачивает заказ */
@@ -140,34 +115,23 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	{
 		$callbackParams = $_POST;
 		$order_id = false;
-		
-		if ($this->ym_org_mode){
-			if ($callbackParams['action'] == 'checkOrder'){
-				$code = $this->checkOrder($callbackParams);
-				$this->sendCode($callbackParams, $code);
-				$order_id = (int)$callbackParams["orderNumber"];
-			}
-			if ($callbackParams['action'] == 'paymentAviso'){
-				$this->checkOrder($callbackParams, TRUE, TRUE);
+		$order_id = (int)$callbackParams[(isset($_POST["label"]))?"label":"orderNumber"];
+		if ($this->checkSign($callbackParams)){
+			if ($callbackParams['action'] == 'paymentAviso' || !$this->ym_org_mode){
+				if ($order_id > 0){
+					$oShop_Order = $this->_shopOrder;
+					$this->shopOrder($oShop_Order)->shopOrderBeforeAction(clone $oShop_Order);
+					$oShop_Order->system_information = "Заказ оплачен через систему Яндекс.Деньги.\n";
+					$oShop_Order->paid();
+					$this->setXSLs();
+					$this->send();
+				}
+				$this->sendCode($callbackParams, 0, 'Order completed.');
+			}else{
+				$this->sendCode($callbackParams, 0, 'Order is exist.');
 			}
 		}else{
-			$check = $this->individualCheck($callbackParams);
-			if (!$check){
-				exit;
-			}else{
-				$order_id = (int)$callbackParams["label"];
-			}
-		}
-		
-		if ($order_id > 0){
-			$oShop_Order = $this->_shopOrder;
-
-			$this->shopOrder($oShop_Order)->shopOrderBeforeAction(clone $oShop_Order);
-
-			$oShop_Order->system_information = "Заказ оплачен через систему Яндекс.Деньги.\n";
-			$oShop_Order->paid();
-			$this->setXSLs();
-			$this->send();
+			$this->sendCode($callbackParams, 1, 'md5 bad');
 		}
 		die();
 	}
@@ -286,35 +250,17 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	<?php
 	}
 
-	public function getInvoice()
-	{
+	public function getInvoice(){
 		return $this->getNotification();
 	}
 
-
-
 	public function getFormUrl(){
+		$url ='https://';
+		$url .= ($this->ym_test_mode)?'demo':'';
 		if (!$this->ym_org_mode){
-			return $this->individualGetFormUrl();
+			return $url.'money.yandex.ru/quickpay/confirm.xml';
 		}else{
-			return $this->orgGetFormUrl();
+			return $url.'money.yandex.ru/eshop.xml';
 		}
 	}
-
-	public function individualGetFormUrl(){
-		if ($this->ym_test_mode){
-			return 'https://demomoney.yandex.ru/quickpay/confirm.xml';
-		}else{
-			return 'https://money.yandex.ru/quickpay/confirm.xml';
-		}
-	}
-
-	public function orgGetFormUrl(){
-		if ($this->ym_test_mode){
-            return 'https://demomoney.yandex.ru/eshop.xml';
-        } else {
-            return 'https://money.yandex.ru/eshop.xml';
-        }
-	}
-
 }
