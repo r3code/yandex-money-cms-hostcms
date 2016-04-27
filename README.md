@@ -17,7 +17,7 @@
 Внимание! Необходимо сделать резервную копию файлов Вашего сайта.
 
 Для установки данного модуля необходимо:
-* загрузить [архив](https://github.com/yandex-money/yandex-money-cms-hostcms/archive/master.zip) и переместить папку `hostcmsfiles` в корень вашего сайта
+* загрузить [архив](https://github.com/yandex-money/yandex-money-cms-hostcms/archive/master.zip)
 * добавить в `Справочник платежных систем` новый элемент и вставить код из файла `handlerXX.php` в поле `Обработчик платежной системы`
 * следовать пунктам [инструкции](http://kassa.yandex.ru/files/hostcms.docx)
 
