@@ -4,14 +4,14 @@
  * Яндекс.Деньги
  * Версия 1.2.1
  * Лицензионный договор:
- *	Любое использование Вами программы означает полное и безоговорочное принятие Вами условий лицензионного договора, размещенного по адресу https://money.yandex.ru/doc.xml?id=527132 (далее – «Лицензионный договор»). Если Вы не принимаете условия Лицензионного договора в полном объёме, Вы не имеете права использовать программу в каких-либо целях.
+ * Любое использование Вами программы означает полное и безоговорочное принятие Вами условий лицензионного договора, размещенного по адресу https://money.yandex.ru/doc.xml?id=527132 (далее – «Лицензионный договор»). Если Вы не принимаете условия Лицензионного договора в полном объёме, Вы не имеете права использовать программу в каких-либо целях.
  */
 class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
-{		
+{
 	/* Тестовый или полный режим функциональности. */
 	protected $ym_test_mode = 1; // 1 - тестовый, 0 - полный
 
-	/* режим приема средств */ 
+	/* режим приема средств */
 	protected $ym_org_mode = 0; // 1 - На расчетный счет организации с заключением договора с Яндекс.Деньгами (юр.лицо), 0 - На счет физического лица в электронной валюте Яндекс.Денег'
 
 	/* Только для физического лица! Идентификатор магазина в системе Яндекс.Деньги. Выдается оператором системы. */
@@ -45,7 +45,35 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	/* Код валюты, в которой будет производиться оплата в Яндекс-Деньги  */
 	protected $ym_orderSumCurrencyPaycash = 643; /* Возможные значения: 643 — рубль Российской Федерации; 10643 — тестовая валюта (демо-рублики демо-системы «Яндекс.Деньги») */
 
-	/* Вызывается на 4-ом шаге оформления заказа*/
+	/**
+	 * Метод, вызываемый в коде настроек ТДС через Shop_Payment_System_Handler::checkBeforeContent($oShop);
+	 */
+	public function checkPaymentBeforeContent()
+	{
+		if (isset($_POST['action']) && isset($_POST['invoiceId']) && isset($_POST['orderNumber']) || isset($_POST['sha1_hash']))
+		{
+			// Получаем ID заказа
+			$order_id = isset($_POST['sha1_hash'])
+				? intval(Core_Array::getPost('label'))
+				: intval(Core_Array::getPost('orderNumber'));
+
+			$oShop_Order = Core_Entity::factory('Shop_Order')->find($order_id);
+
+			if (!is_null($oShop_Order->id))
+			{
+				header("Content-type: application/xml");
+
+				// Вызов обработчика платежной системы
+				Shop_Payment_System_Handler::factory($oShop_Order->Shop_Payment_System)
+					->shopOrder($oShop_Order)
+					->paymentProcessing();
+			}
+		}
+	}
+
+	/*
+	 * Метод, запускающий выполнение обработчика
+	 */
 	public function execute()
 	{
 		parent::execute();
@@ -55,7 +83,9 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 		return $this;
 	}
 
-	/* вычисление суммы товаров заказа */
+	/*
+	 * Вычисление суммы товаров заказа
+	 */
 	public function getSumWithCoeff()
 	{
 		return Shop_Controller::instance()->round(($this->ym_currency_id > 0
@@ -64,7 +94,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 				$this->_shopOrder->Shop_Currency,
 				Core_Entity::factory('Shop_Currency', $this->ym_currency_id)
 			)
-			: 0) * $this->_shopOrder->getAmount() );
+			: 0) * $this->_shopOrder->getAmount());
 	}
 
 	protected function _processOrder()
@@ -80,109 +110,150 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 		return $this;
 	}
 
-	/* обработка ответа от платёжной системы */
-	public function paymentProcessing(){
-			$this->ProcessResult();
-			return TRUE;
+	/*
+	 * Обработка ответа от платёжной системы
+	 */
+	public function paymentProcessing()
+	{
+		$this->ProcessResult();
+		return TRUE;
 	}
 
-	public function checkSign($callbackParams){
-		if ($this->ym_org_mode){
+	public function checkSign($callbackParams)
+	{
+		if ($this->ym_org_mode)
+		{
 			$string = $callbackParams['action'].';'.$callbackParams['orderSumAmount'].';'.$callbackParams['orderSumCurrencyPaycash'].';'.$callbackParams['orderSumBankPaycash'].';'.$callbackParams['shopId'].';'.$callbackParams['invoiceId'].';'.$callbackParams['customerNumber'].';'.$this->ym_password;
-			$md5 = strtoupper(md5($string));
-			return (strtoupper($callbackParams['md5'])==$md5);
-		}else{
+
+			return strtoupper($callbackParams['md5']) == strtoupper(md5($string));
+		}
+		else
+		{
 			$string = $callbackParams['notification_type'].'&'.$callbackParams['operation_id'].'&'.$callbackParams['amount'].'&'.$callbackParams['currency'].'&'.$callbackParams['datetime'].'&'.$callbackParams['sender'].'&'.$callbackParams['codepro'].'&'.$this->ym_password.'&'.$callbackParams['label'];
+
 			$check = (sha1($string) == $callbackParams['sha1_hash']);
+
 			if (!$check){
 				header('HTTP/1.0 401 Unauthorized');
-				return false;
+				return FALSE;
 			}
-			return true;
+
+			return TRUE;
 		}
 	}
 
-	public function sendCode($callbackParams, $code, $message=''){
-		if (!$this->ym_org_mode) return;
+	public function sendCode($callbackParams, $code, $message = '')
+	{
+		if (!$this->ym_org_mode)
+		{
+			return;
+		}
+
 		header("Content-type: text/xml; charset=utf-8");
 		$xml = '<?xml version="1.0" encoding="UTF-8"?>
 			<'.$callbackParams['action'].'Response performedDatetime="'.date("c").'" code="'.$code.'" invoiceId="'.$callbackParams['invoiceId'].'" shopId="'.$this->ym_shopid.'" techmessage="'.$message.'"/>';
 		echo $xml;
 	}
 
-	/* оплачивает заказ */
+	/*
+	 * Оплачивает заказ
+	 */
 	function ProcessResult()
 	{
-		$callbackParams = $_POST;
-		$order_id = false;
-		$order_id = (int)$callbackParams[(isset($_POST["label"]))?"label":"orderNumber"];
-		if ($this->checkSign($callbackParams)){
-			if ($callbackParams['action'] == 'paymentAviso' || !$this->ym_org_mode){
-				if ($order_id > 0){
+		if ($this->checkSign($_POST))
+		{
+			if ($_POST['action'] == 'paymentAviso' || !$this->ym_org_mode)
+			{
+				$order_id = intval(Core_Array::getPost(isset($_POST["label"]) ? "label" : "orderNumber"));
+				if ($order_id > 0)
+				{
 					$oShop_Order = $this->_shopOrder;
-					$this->shopOrder($oShop_Order)->shopOrderBeforeAction(clone $oShop_Order);
-					$oShop_Order->system_information = "Заказ оплачен через систему Яндекс.Деньги.\n";
-					$oShop_Order->paid();
-					$this->setXSLs();
-					$this->send();
+
+					$sHostcmsSum = sprintf("%.2f", $this->getSumWithCoeff());
+					$sYandexSum = Core_Array::getRequest('orderSumAmount', '');
+
+					if ($sHostcmsSum == $sYandexSum)
+					{
+						$this->shopOrder($oShop_Order)->shopOrderBeforeAction(clone $oShop_Order);
+
+						$oShop_Order->system_information = "Заказ оплачен через систему Яндекс.Касса.\n";
+						$oShop_Order->paid();
+
+						$this->setXSLs();
+						$this->send();
+					}
+					else
+					{
+						$this->sendCode($_POST, 1, 'Bad amount');
+					}
 				}
-				$this->sendCode($callbackParams, 0, 'Order completed.');
-			}else{
-				$this->sendCode($callbackParams, 0, 'Order is exist.');
+				$this->sendCode($_POST, 0, 'Order completed.');
 			}
-		}else{
-			$this->sendCode($callbackParams, 1, 'md5 bad');
+			else
+			{
+				$this->sendCode($_POST, 0, 'Order is exist.');
+			}
 		}
+		else
+		{
+			$this->sendCode($_POST, 1, 'md5 bad');
+		}
+
 		die();
 	}
 
-	/* печатает форму отправки запроса на сайт платёжной системы */
+	/*
+	 * Печатает форму отправки запроса на сайт платёжной системы
+	 */
 	public function getNotification()
 	{
-		$Sum = $this->getSumWithCoeff();
+		$sum = $this->getSumWithCoeff();
 
-		$oSiteUser = Core::moduleIsActive('siteuser')
+		$oSiteuser = Core::moduleIsActive('siteuser')
 			? Core_Entity::factory('Siteuser')->getCurrent()
 			: NULL;
-		
-		$oSite_Alias = $this->_shopOrder->Shop->Site->getCurrentAlias();
-		$site_alias = !is_null($oSite_Alias) ? $oSite_Alias->name : '';
-		$shop_path = $this->_shopOrder->Shop->Structure->getPath();
-		$handler_url = 'http://'.$site_alias.$shop_path . "cart/?order_id={$this->_shopOrder->id}";
 
-		$successUrl = $handler_url . "&payment=success";
-		$failUrl = $handler_url . "&payment=fail";
+		$oSite_Alias = $this->_shopOrder->Shop->Site->getCurrentAlias();
+
+		$sSiteAlias = !is_null($oSite_Alias) ? $oSite_Alias->name : '';
+
+		$sShopPath = $this->_shopOrder->Shop->Structure->getPath();
+
+		$sHandlerUrl = 'http://' . $sSiteAlias . $sShopPath . "cart/?order_id={$this->_shopOrder->id}";
+
+		$successUrl = $sHandlerUrl . "&payment=success";
+		$failUrl = $sHandlerUrl . "&payment=fail";
 
 		?>
 		<h2>Оплата через систему Яндекс.Деньги</h2>
-		
-		<form method="POST" action="<?php echo $this->getFormUrl(); ?>">
+
+		<form method="POST" action="<?php echo $this->getFormUrl()?>">
 			<?php if ($this->ym_org_mode){ ?>
-				<input class="wide" name="scid" value="<?php echo $this->ym_scid; ?>" type="hidden">
-				<input type="hidden" name="ShopID" value="<?php echo $this->ym_shopid; ?>">
-				<input type="hidden" name="CustomerNumber" value="<?php echo (is_null($oSiteUser) ? 0 : $oSiteUser->id); ?>">
-				<input type="hidden" name="orderNumber" value="<?php echo $this->_shopOrder->id; ?>">
-				<input type="hidden" name="shopSuccessURL" value="<?php echo $successUrl; ?>">
-				<input type="hidden" name="shopFailURL" value="<?php echo $failUrl; ?>">
+				<input class="wide" name="scid" value="<?php echo $this->ym_scid?>" type="hidden">
+				<input type="hidden" name="ShopID" value="<?php echo $this->ym_shopid?>">
+				<input type="hidden" name="CustomerNumber" value="<?php echo (is_null($oSiteuser) ? 0 : $oSiteuser->id)?>">
+				<input type="hidden" name="orderNumber" value="<?php echo $this->_shopOrder->id?>">
+				<input type="hidden" name="shopSuccessURL" value="<?php echo $successUrl?>">
+				<input type="hidden" name="shopFailURL" value="<?php echo $failUrl?>">
 				<input type="hidden" name="cms_name" value="hostcms">
 			<?php }else {?>
-				   <input type="hidden" name="receiver" value="<?php echo $this->ym_account; ?>">
-				   <input type="hidden" name="formcomment" value="<?php echo $site_alias;?>">
-				   <input type="hidden" name="short-dest" value="<?php echo $site_alias;?>">
+				   <input type="hidden" name="receiver" value="<?php echo $this->ym_account?>">
+				   <input type="hidden" name="formcomment" value="<?php echo $sSiteAlias?>">
+				   <input type="hidden" name="short-dest" value="<?php echo $sSiteAlias?>">
 				   <input type="hidden" name="writable-targets" value="false">
 				   <input type="hidden" name="comment-needed" value="true">
-				   <input type="hidden" name="label" value="<?php echo $this->_shopOrder->id;?>">
+				   <input type="hidden" name="label" value="<?php echo $this->_shopOrder->id?>">
 				   <input type="hidden" name="quickpay-form" value="shop">
-					<input type="hidden" name="successUrl" value="<?php echo $successUrl; ?>"> 
+					<input type="hidden" name="successUrl" value="<?php echo $successUrl?>">
 
-				   <input type="hidden" name="targets" value="Заказ <?php echo $this->_shopOrder->id;?>">
-				   <input type="hidden" name="sum" value="<?php echo $Sum;?>" data-type="number" >
-				   <input type="hidden" name="comment" value="<?php echo $this->_shopOrder->description;?>" >
+				   <input type="hidden" name="targets" value="Заказ <?php echo $this->_shopOrder->id?>">
+				   <input type="hidden" name="sum" value="<?php echo $sum?>" data-type="number" >
+				   <input type="hidden" name="comment" value="<?php echo $this->_shopOrder->description?>" >
 				   <input type="hidden" name="need-fio" value="true">
 				   <input type="hidden" name="need-email" value="true" >
 				   <input type="hidden" name="need-phone" value="false">
 				   <input type="hidden" name="need-address" value="false">
-	   
+
 			<?php } ?>
 				<style>
 					.ym_table tr td{
@@ -195,12 +266,12 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 				<table class="ym_table" border = "1" cellspacing = "20" width = "80%" bgcolor = "#FFFFFF" align = "center" bordercolor = "#000000">
 					<tr>
 						<td>Сумма, руб.</td>
-						<td> <input type="text" name="Sum" value="<?php echo $Sum?>" readonly="readonly"> </td>
+						<td> <input type="text" name="Sum" value="<?php echo $sum?>" readonly="readonly"> </td>
 					</tr>
-					
+
 					<tr>
 						<td>Способ оплаты</td>
-						<td> 
+						<td>
 								<select name="paymentType">
 								<?php if ($this->ym_method_pc){?>
 									<option value="PC">Оплата из кошелька в Яндекс.Деньгах</option>
@@ -250,17 +321,18 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	<?php
 	}
 
-	public function getInvoice(){
+	public function getInvoice()
+	{
 		return $this->getNotification();
 	}
 
-	public function getFormUrl(){
-		$url ='https://';
-		$url .= ($this->ym_test_mode)?'demo':'';
-		if (!$this->ym_org_mode){
-			return $url.'money.yandex.ru/quickpay/confirm.xml';
-		}else{
-			return $url.'money.yandex.ru/eshop.xml';
-		}
+	public function getFormUrl()
+	{
+		$sUrl = 'https://';
+		$this->ym_test_mode && $sUrl .= 'demo';
+
+		return $this->ym_org_mode
+			? $sUrl . 'money.yandex.ru/eshop.xml'
+			: $sUrl . 'money.yandex.ru/quickpay/confirm.xml';
 	}
 }
