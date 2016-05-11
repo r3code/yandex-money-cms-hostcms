@@ -2,7 +2,7 @@
 
 /**
  * Яндекс.Деньги
- * Версия 1.2.1
+ * Версия 1.3.0
  * Лицензионный договор:
  *	Любое использование Вами программы означает полное и безоговорочное принятие Вами условий лицензионного договора, размещенного по адресу https://money.yandex.ru/doc.xml?id=527132 (далее – «Лицензионный договор»). Если Вы не принимаете условия Лицензионного договора в полном объёме, Вы не имеете права использовать программу в каких-либо целях.
  */
@@ -10,9 +10,10 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 {		
 	/* Тестовый или полный режим функциональности. */
 	protected $ym_test_mode = 1; // 1 - тестовый, 0 - полный
+	protected $ym_smartpay = 1; // 1 - выбор оплаты на стороне Яндекс.Кассы , 0 - выбор оплаты на стороне магазина
 
 	/* режим приема средств */ 
-	protected $ym_org_mode = 0; // 1 - На расчетный счет организации с заключением договора с Яндекс.Деньгами (юр.лицо), 0 - На счет физического лица в электронной валюте Яндекс.Денег'
+	protected $ym_org_mode = 1; // 1 - На расчетный счет организации с заключением договора с Яндекс.Деньгами (юр.лицо), 0 - На счет физического лица в электронной валюте Яндекс.Денег'
 
 	/* Только для физического лица! Идентификатор магазина в системе Яндекс.Деньги. Выдается оператором системы. */
 	protected $ym_account = '410011680044609';
@@ -121,7 +122,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 				if ($order_id > 0){
 					$oShop_Order = $this->_shopOrder;
 					$this->shopOrder($oShop_Order)->shopOrderBeforeAction(clone $oShop_Order);
-					$oShop_Order->system_information = "Заказ оплачен через систему Яндекс.Деньги.\n";
+					$oShop_Order->system_information = "Заказ оплачен через Яндекс.Деньги.\n";
 					$oShop_Order->paid();
 					$this->setXSLs();
 					$this->send();
@@ -154,8 +155,6 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 		$failUrl = $handler_url . "&payment=fail";
 
 		?>
-		<h2>Оплата через систему Яндекс.Деньги</h2>
-		
 		<form method="POST" action="<?php echo $this->getFormUrl(); ?>">
 			<?php if ($this->ym_org_mode){ ?>
 				<input class="wide" name="scid" value="<?php echo $this->ym_scid; ?>" type="hidden">
@@ -165,6 +164,8 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 				<input type="hidden" name="shopSuccessURL" value="<?php echo $successUrl; ?>">
 				<input type="hidden" name="shopFailURL" value="<?php echo $failUrl; ?>">
 				<input type="hidden" name="cms_name" value="hostcms">
+				<?php if (isset ($this->_shopOrder->email)){ ?> <input type="hidden" name="cps_email" value="<?php echo $this->_shopOrder->email;?>"> <?php } ?>
+				<?php if (isset ($this->_shopOrder->phone)){ ?> <input type="hidden" name="cps_phone" value="<?php echo $this->_shopOrder->phone;?>"> <?php } ?>
 			<?php }else {?>
 				   <input type="hidden" name="receiver" value="<?php echo $this->ym_account; ?>">
 				   <input type="hidden" name="formcomment" value="<?php echo $site_alias;?>">
@@ -197,7 +198,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 						<td>Сумма, руб.</td>
 						<td> <input type="text" name="Sum" value="<?php echo $Sum?>" readonly="readonly"> </td>
 					</tr>
-					
+				<?php if (!$this->ym_smartpay || !$this->ym_org_mode ){ ?>
 					<tr>
 						<td>Способ оплаты</td>
 						<td> 
@@ -238,15 +239,119 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 							</select>
 						</td>
 					</tr>
+					<?php } ?>
 				</table>
-
-				<table border="0" cellspacing="1" align="center"  width = "80%" bgcolor="#CCCCCC" >
-					<tr bgcolor="#FFFFFF">
-						<td width="490"></td>
-						<td width="48"><input type="submit" name = "BuyButton" value = "Оплатить"></td>
-					</tr>
-				</table>
+				<br>
+				<?php if ($this->ym_smartpay && $this->ym_org_mode){ ?>
+					<table border="0" cellspacing="1" align="center"  width = "80%">
+						<tr>
+							<td align="center">
+								<div class='input__pay fly'>
+									<input class='cmd' type='submit' value=''>
+									<span class="text1">Заплатить</span>
+									<span class="text2">через Яндекс</span>
+								</div>
+							</td>
+						</tr>
+					</table>
+				<?php }else{ ?>
+					<table border="0" cellspacing="1" align="center"  width = "80%" bgcolor="#CCCCCC" >
+						<tr bgcolor="#FFFFFF">
+							<td width="490"></td>
+							<td width="48"><input type="submit" name = "BuyButton" value = "Оплатить"></td>
+						</tr>
+					</table>
+				<?php } ?>
 		</form>
+		<style type="text/css">
+			html, body {
+				margin: 0;
+				padding: 0;
+			}
+
+			.wrapper {
+				width: 400px;
+				margin: 0 auto;
+				padding-top: 200px;
+			}
+
+			table {
+				width: 400px;
+			}
+
+			.container {
+				width: 200px;
+				text-align: center;
+				padding-top: 50px;
+			}
+
+			.fly {
+				box-shadow: 0px 1px 0px 0px rgba(0,0,0,0.12), 0 5px 10px -3px rgba(0, 0, 0, 0.3);;
+			}
+			.text1 {
+				position: relative;
+				left: -0px;
+				top: -53px;
+				color: #000;
+				font-size: 20px;
+				line-height: 26px;
+				font-family: YandexSansTextApp-Regular, Arial, Helvetica, sans-serif;
+				padding: 0 20px;
+				text-align: center;
+				transition: 0.3s ease-out 0s all;
+				cursor: pointer;
+				z-index: 1;
+			}
+			.text2 {
+				position: relative;
+				left: -0;
+				top: -55px;
+				color: #000;
+				font-size: 12px;
+				font-family: YandexSansTextApp-Light, Arial, Helvetica, sans-serif;
+				padding: 0 20px;
+				text-align: center;
+				transition: 0.3s ease-out 0s all;
+				cursor: pointer;
+				z-index: 1;
+			}
+			.cmd {
+				position: relative;
+				left: 0;
+				top: 0;
+				/*background: #FFDB4D;*/
+				opacity: 0;
+				border-radius: 4px;
+				outline: 0px;
+				border: 0px;
+				transition: 0.1s ease-out 0s all;
+				display:block;
+				height: 100%;
+				width:100%;
+				z-index: 2;
+				cursor: pointer;
+			}
+
+			.input__pay:hover {
+				background: #ffd633;
+				transition: 0.1s ease-out 0s all;
+				/*cursor: pointer;*/
+			}
+
+			.input__pay:active {
+				background: #FFcc00;
+				/*cursor: pointer;*/
+			}
+			.input__pay {
+				background: #FFDB4D;
+				border-radius: 4px;
+				height: 64px;
+				width: 155px;
+				outline: 0px;
+				border: 0px;
+				transition: 0.1s ease-out 0s all;
+			}
+		</style>
 	<?php
 	}
 
