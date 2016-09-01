@@ -17,10 +17,10 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	/* Режим приема средств */
 	protected $ym_org_mode = 1; // 1 - На расчетный счет организации с заключением договора с Яндекс.Деньгами (юр.лицо), 0 - На счет физического лица в электронной валюте Яндекс.Денег'
 
-	/* Только для физического лица! Идентификатор магазина в системе Яндекс.Деньги. Выдается оператором системы. */
+	/* Только для физического лица! Идентификатор магазина в сервисе Яндекс.Деньги. Выдается менеджером сервиса. */
 	protected $ym_account = '410011680044609';
 
-	/* Пароль магазина в системе Яндекс.Деньги. Выдается оператором системы. */
+	/* Пароль магазина в сервисе Яндекс.Деньги. Выдается менеджером сервиса. */
 	protected $ym_password = 'mEG2ninQcEOc8xTbHy5ApQOf';
 
 	/* Способы оплаты */
@@ -46,7 +46,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	protected $ym_currency_id = 1; // 1 - рубли (RUR), 2 - евро (EUR), 3 - доллары (USD)
 
 	/* Код валюты, в которой будет производиться оплата в Яндекс-Деньги  */
-	protected $ym_orderSumCurrencyPaycash = 643; /* Возможные значения: 643 — рубль Российской Федерации; 10643 — тестовая валюта (демо-рублики демо-системы «Яндекс.Деньги») */
+	protected $ym_orderSumCurrencyPaycash = 643; /* Возможные значения: 643 — рубль Российской Федерации; 10643 — тестовая валюта (демо-рублики сервиса Яндекс.Деньги) */
 
 	/**
 	 * Метод, вызываемый в коде настроек ТДС через Shop_Payment_System_Handler::checkBeforeContent($oShop);
@@ -66,7 +66,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 			{
 				header("Content-type: application/xml");
 
-				// Вызов обработчика платежной системы
+				// Вызов обработчика платежного сервиса
 				Shop_Payment_System_Handler::factory($oShop_Order->Shop_Payment_System)
 					->shopOrder($oShop_Order)
 					->paymentProcessing();
@@ -114,7 +114,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	}
 
 	/*
-	 * Обработка ответа от платёжной системы
+	 * Обработка ответа платёжного сирвиса
 	 */
 	public function paymentProcessing()
 	{
@@ -156,6 +156,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 		$xml = '<?xml version="1.0" encoding="UTF-8"?>
 			<'.$callbackParams['action'].'Response performedDatetime="'.date("c").'" code="'.$code.'" invoiceId="'.$callbackParams['invoiceId'].'" shopId="'.$this->ym_shopid.'" techmessage="'.$message.'"/>';
 		echo $xml;
+		die();
 	}
 
 	/*
@@ -165,7 +166,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	{
 		if ($this->checkSign($_POST))
 		{
-			if ($_POST['action'] == 'paymentAviso' || !$this->ym_org_mode)
+			if (isset($_POST['action']) || !$this->ym_org_mode)
 			{
 				$order_id = intval(Core_Array::getPost(isset($_POST["label"]) ? "label" : "orderNumber"));
 				if ($order_id > 0)
@@ -177,17 +178,19 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 
 					if ($sHostcmsSum == $sYandexSum)
 					{
-						$this->shopOrder($oShop_Order)->shopOrderBeforeAction(clone $oShop_Order);
+						if ($_POST['action'] == 'paymentAviso') {
+							$this->shopOrder($oShop_Order)->shopOrderBeforeAction(clone $oShop_Order);
 
-						$oShop_Order->system_information = "Заказ оплачен через сервис Яндекс.Касса.\n";
-						$oShop_Order->paid();
+							$oShop_Order->system_information = "Заказ оплачен через сервис Яндекс.Касса.\n";
+							$oShop_Order->paid();
 
-						$this->setXSLs();
-						$this->send();
+							$this->setXSLs();
+							$this->send();
+						}
 					}
 					else
 					{
-						$this->sendCode($_POST, 1, 'Bad amount');
+						$this->sendCode($_POST, 100, 'Bad amount');
 					}
 				}
 				$this->sendCode($_POST, 0, 'Order completed.');
@@ -201,12 +204,10 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 		{
 			$this->sendCode($_POST, 1, 'md5 bad');
 		}
-
-		die();
 	}
 
 	/*
-	 * Печатает форму отправки запроса на сайт платёжной системы
+	 * Печатает форму отправки запроса на сайт платёжной сервиса
 	 */
 	public function getNotification()
 	{
