@@ -165,6 +165,7 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 	 */
 	function ProcessResult()
 	{
+		$invoiceId = Core_Array::getPost('invoiceId');
 		if ($this->checkSign($_POST))
 		{
 			if (isset($_POST['action']) || !$this->ym_org_mode)
@@ -182,13 +183,13 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 						if ($_POST['action'] == 'paymentAviso') {
 							$this->shopOrder($oShop_Order)->shopOrderBeforeAction(clone $oShop_Order);
 
-							$oShop_Order->system_information = "Заказ оплачен через сервис Яндекс.Касса.\n";
+							$oShop_Order->system_information = "Заказ оплачен через сервис Яндекс.Касса.\r\n Invoice ID: {$invoiceId}\n";
 							$oShop_Order->paid();
 
 							$this->setXSLs();
 							// предотвращаем отправку письма об изменении статуса
-							// changedOrder('...') сам отправит письмо с подтверждением 
-							// $this->send();
+              // changedOrder('...') сам отправит письмо с подтверждением 
+              // $this->send();
 							// Заказ изменен - отправить письма о подтверждении платежа
 							ob_start();
 							$this->changedOrder('changeStatusPaid');
