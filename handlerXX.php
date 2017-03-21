@@ -151,10 +151,11 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 		{
 			return;
 		}
-
+		$invoiceId = $callbackParams['invoiceId'];
+		if(!$invoiceId) $invoiceId = -1;
 		header("Content-type: text/xml; charset=utf-8");
 		$xml = '<?xml version="1.0" encoding="UTF-8"?>
-			<'.$callbackParams['action'].'Response performedDatetime="'.date("c").'" code="'.$code.'" invoiceId="'.$callbackParams['invoiceId'].'" shopId="'.$this->ym_shopid.'" techmessage="'.$message.'"/>';
+			<'.$callbackParams['action'].'Response performedDatetime="'.date("c").'" code="'.$code.'" invoiceId="'.$invoiceId.'" shopId="'.$this->ym_shopid.'" techmessage="'.$message.'"/>';
 		echo $xml;
 		die();
 	}
