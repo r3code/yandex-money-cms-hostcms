@@ -186,7 +186,13 @@ class Shop_Payment_System_HandlerXX extends Shop_Payment_System_Handler
 							$oShop_Order->paid();
 
 							$this->setXSLs();
-							$this->send();
+							// предотвращаем отправку письма об изменении статуса
+							// changedOrder('...') сам отправит письмо с подтверждением 
+							// $this->send();
+							// Заказ изменен - отправить письма о подтверждении платежа
+							ob_start();
+							$this->changedOrder('changeStatusPaid');
+							ob_get_clean();
 						}
 					}
 					else
